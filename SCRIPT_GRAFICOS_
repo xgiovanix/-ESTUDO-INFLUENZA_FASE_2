@@ -1,0 +1,73 @@
+#========================================================================
+#============GRAFICO DE PORPORCOES DE SUPORTE VENT AO LONGO DOS ANOS
+#========================================================================
+# 1. Verificar valores únicos e suas frequências
+table(srag$suporte_vent, useNA = "ifany")
+
+# 2. Verificar proporção por ano
+verificacao <- srag %>%
+  filter(!is.na(ano), 
+         suporte_vent %in% c("Yes, invasive", "No", "Yes, non-invasive")) %>%
+  group_by(ano, suporte_vent) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  group_by(ano) %>%
+  mutate(
+    prop = n / sum(n),
+    prop_percent = prop * 100
+  ) %>%
+  arrange(ano, desc(prop)) %>%
+  
+  # REORDENAR OS NÍVEIS DO FATOR na sequência desejada
+  mutate(suporte_vent = factor(suporte_vent, 
+                               levels = c("No", "Yes, non-invasive", "Yes, invasive")))
+
+# Gráfico com tamanhos padronizados
+ggplot(verificacao, aes(x = ano, y = prop, fill = suporte_vent)) +
+  geom_col(position = "fill") +
+  geom_text(aes(label = sprintf("%.1f%%", prop * 100)),
+            position = position_fill(vjust = 0.5),
+            size = 5,  # 12pt em geom_text
+            family = "Times New Roman") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Figure x. Proportion of ventilatory support among ICU hospitalized patients with influenza-associated SARI in the pre- and post-COVID-19 pandemic period",
+    subtitle = "Comparison of invasive, non-invasive, and no ventilatory support across years",
+    y = "Proportion (%)",
+    x = "Year",
+    fill = "Ventilatory support"
+  ) +
+  scale_fill_manual(
+    values = c("No" = "#f5da73", 
+               "Yes, non-invasive" = "#eaa6c3", 
+               "Yes, invasive" = "#9a99e1"),
+    labels = c("No support", "Non-invasive", "Invasive")
+  ) +
+  theme_minimal(base_family = "Times New Roman") +  # Removeu base_size
+  theme(
+    # EIXOS - TODOS com size = 12 (em pontos)
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12, family = "Times New Roman"),
+    axis.text.y = element_text(size = 12, family = "Times New Roman"),
+    axis.title.x = element_text(size = 12, face = "bold", family = "Times New Roman"),
+    axis.title.y = element_text(size = 12, face = "bold", family = "Times New Roman"),
+    
+    # TÍTULOS
+    plot.title = element_text(size = 12, face = "bold", hjust = 0, family = "Times New Roman"),
+    plot.subtitle = element_text(size = 11, color = "gray40", hjust = 0, family = "Times New Roman"),
+    
+    # LEGENDA
+    legend.title = element_text(size = 12, face = "bold", family = "Times New Roman"),
+    legend.text = element_text(size = 12, family = "Times New Roman"),  # Alterado de 11 para 12
+    
+    # OUTROS
+    strip.text = element_text(size = 12, family = "Times New Roman"),
+    panel.grid.minor = element_blank()
+  )
+
+ggsave(
+  filename = "Figure_1_Ventilatory_Support_Proportions.png",
+  width = 12,
+  height = 7,
+  dpi = 300,
+  bg = "white",
+  device = "png"
+)
